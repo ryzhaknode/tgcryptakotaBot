@@ -1,7 +1,36 @@
 const { Telegraf, Markup } = require('telegraf');
 const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
 const {startTxt, privateKotaStartTxt, uidRefuse, uidFind, uidChange, educationKotaStartTxt} = require("./textConsts");
 
+// Підключення до бази даних SQLite
+const db = new sqlite3.Database('./users.db', (err) => {
+    if (err) {
+        console.error('Помилка підключення до бази даних:', err);
+    } else {
+        console.log('Підключено до бази даних SQLite');
+        // Створення таблиці для користувачів з полями id та username
+        db.run(`
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY,
+                username TEXT
+            )
+        `);
+    }
+});
+
+// Функція для збереження користувача в базі даних
+function saveUser(telegramId, username) {
+    db.run(`
+        INSERT OR IGNORE INTO users(id, username) 
+        VALUES(?, ?)
+    `, [telegramId, username], (err) => {
+        if (err) {
+            return console.error('Помилка збереження користувача:', err);
+        }
+        console.log('Користувача збережено:', telegramId);
+    });
+}
 
 const tgcryptakotaBot = new Telegraf('7965968007:AAGg4TWakrqx4weRqsKSoIFUZivpegBlgzQ');
 
@@ -9,6 +38,11 @@ tgcryptakotaBot.telegram.setMyCommands([
     { command: 'start', description: 'Начать сначала' },
 ]);
 tgcryptakotaBot.start((ctx) => {
+
+    const telegramId = ctx.from.id;
+    const username = ctx.from.username || 'Невідомий';
+    saveUser(telegramId, username);
+
     ctx.replyWithHTML(
         startTxt,
         Markup.inlineKeyboard(
