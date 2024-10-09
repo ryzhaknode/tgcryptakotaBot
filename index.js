@@ -49,7 +49,7 @@ function saveUser(telegramId, username) {
 }
 
 
-const tgcryptakotaBot = new Telegraf(testBotToken);
+const tgcryptakotaBot = new Telegraf(mainBotToken);
 tgcryptakotaBot.telegram.setMyCommands([
     { command: 'start', description: 'Начать сначала' },
 ]);
