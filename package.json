@@ -10,6 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.7.7",
+    "bybit-api": "^3.10.19",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
     "sqlite3": "^5.1.7",
     "telegraf": "^4.16.3"
   }
