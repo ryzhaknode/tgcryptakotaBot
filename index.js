@@ -10,7 +10,7 @@ require('dotenv').config();
 const mainBotToken = process.env.mainBotTOKEN;
 const testBotToken = process.env.testBotTOKEN;
 // API ключи byibt
-const apiKey = 'aEHgntL0GP3aRo1Sk5';
+const apiKey = process.env.apiPublic;
 const apiSecret = process.env.apiSecretApi;
 
 
