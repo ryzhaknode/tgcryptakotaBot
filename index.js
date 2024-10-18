@@ -1,8 +1,7 @@
 const { Telegraf, Markup } = require('telegraf');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
-const {startTxt, privateKotaStartTxt, uidRefuse, uidFind, uidChange, educationKotaStartTxt, doneRegistration,
-    noRegistrationDoneDepNo
+const {startTxt, privateKotaStartTxt, uidRefuse, uidFind, uidChange, educationKotaStartTxt, doneRegistration, msg50min, msg2h,    noRegistrationDoneDepNo
 } = require("./textConsts");
 const { RestClientV5 } = require('bybit-api');
 require('dotenv').config();
@@ -19,6 +18,72 @@ const client = new RestClientV5({
     key: apiKey,
     secret: apiSecret,
 });
+
+const userActivityTimers = {};
+
+// Функція для скидання таймерів користувача
+function resetUserTimer(ctx) {
+    const telegramId = ctx.from.id;
+
+    // Якщо попередні таймери існують, очищаємо їх
+    if (userActivityTimers[telegramId]) {
+        clearTimeout(userActivityTimers[telegramId].timer5min);
+        clearTimeout(userActivityTimers[telegramId].timer50min);
+        clearTimeout(userActivityTimers[telegramId].timer2h);
+        clearTimeout(userActivityTimers[telegramId].timer4h);
+        clearTimeout(userActivityTimers[telegramId].timer24h);
+    }
+
+    // Створюємо новий таймер на 5 хвилин
+    const timer5min = setTimeout(() => {
+        ctx.replyWithPhoto(
+            { source: path.join(__dirname, 'image', 'findUID.jpeg') },
+            {
+                caption: uidFind,
+                parse_mode: 'HTML'
+            }
+        );
+    }, 300000); // 5 хвилин
+
+    // Створюємо новий таймер на 50 хвилин
+    const timer50min = setTimeout(() => {
+        ctx.replyWithPhoto(
+            { source: path.join(__dirname, 'image', 'trade50min.jpg') },
+            {
+                caption: msg50min,
+                parse_mode: 'HTML'
+            }
+        );
+    }, 3000000); // 50 хвилин
+
+    // Створюємо новий таймер на 2 години
+    const timer2h = setTimeout(() => {
+        ctx.replyWithPhoto(
+            { source: path.join(__dirname, 'image', 'strkShort.jpg') },
+            {
+                caption: msg2h,
+                parse_mode: 'HTML'
+            }
+        );
+    }, 7200000); // 2 години (2 * 60 * 60 * 1000 мс)
+
+
+    // Створюємо новий таймер на 24 години
+    const timer24h = setTimeout(() => {
+        ctx.replyWithPhoto(
+            { source: path.join(__dirname, 'image', 'trade50min.jpg') },
+            {
+                caption: msg50min,
+                parse_mode: 'HTML'
+            }
+        );
+    }, 86400000); // 24 години (24 * 60 * 60 * 1000 мс)
+
+    // Зберігаємо всі таймери для користувача
+    userActivityTimers[telegramId] = { timer5min, timer50min, timer2h, timer24h };
+}
+
+
 
 // Підключення до бази даних SQLite
 const db = new sqlite3.Database('./users.db', (err) => {
@@ -49,11 +114,12 @@ function saveUser(telegramId, username) {
 }
 
 
-const tgcryptakotaBot = new Telegraf(mainBotToken);
+const tgcryptakotaBot = new Telegraf(testBotToken);
 tgcryptakotaBot.telegram.setMyCommands([
     { command: 'start', description: 'Начать сначала' },
 ]);
 tgcryptakotaBot.start((ctx) => {
+    resetUserTimer(ctx);
     const telegramId = ctx.from.id;
     const username = ctx.from.username || 'Невідомий';
     saveUser(telegramId, username);
@@ -69,6 +135,7 @@ tgcryptakotaBot.start((ctx) => {
 })
 
 tgcryptakotaBot.action('btn_educationKota', (ctx) => {
+    resetUserTimer(ctx);
     ctx.replyWithHTML(
         educationKotaStartTxt,
         Markup.inlineKeyboard([
@@ -79,6 +146,7 @@ tgcryptakotaBot.action('btn_educationKota', (ctx) => {
 });
 
 tgcryptakotaBot.action('btn_privateKota', (ctx) => {
+    resetUserTimer(ctx);
     ctx.replyWithHTML(
         privateKotaStartTxt,
         Markup.inlineKeyboard([
@@ -100,6 +168,7 @@ async function fetchUserData(uid) {
 }
 // Обробка будь-якого текстового повідомлення від користувача
 tgcryptakotaBot.on('text', async (ctx) => {
+    resetUserTimer(ctx);
     const message = ctx.message.text;
 
     // Перевірка чи містить повідомлення тільки цифри
