@@ -1,7 +1,12 @@
 const { Telegraf, Markup } = require('telegraf');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
-const {startTxt, privateKotaStartTxt, uidRefuse, uidFind, uidChange, educationKotaStartTxt, doneRegistration, msg50min, msg2h,    noRegistrationDoneDepNo
+const {startTxtNew, startTxt, privateKotaStartTxt, uidRefuse, uidFind, uidChange, educationKotaStartTxt, doneRegistration, msg50min, msg2h,    noRegistrationDoneDepNo,
+    getPrivateKotaTxt,
+    backTxt,
+    notYourRef,
+    addToTeam,
+    transferKyc
 } = require("./textConsts");
 const { RestClientV5 } = require('bybit-api');
 require('dotenv').config();
@@ -66,6 +71,7 @@ const users = [
     { id: 576522718, username: 'matviyukvitaliy' },
     { id: 583208928, username: 'cryptoangel090' },
     { id: 586700113, username: 'denisryz' },
+    { id: 619947262, username: 'Dmitrym_88' },
     { id: 626888499, username: 'Lokamel' },
     { id: 639920575, username: 'ParfCoast23' },
     { id: 643581598, username: 'IGOR00001k' },
@@ -85,8 +91,10 @@ const users = [
     { id: 790531485, username: 'maxim3737' },
     { id: 792565089, username: 'getsuga_jujisho' },
     { id: 800956269, username: 'strannik28111979' },
+    { id: 820426385, username: 'ImConcrete' },
     { id: 828852559, username: 'ajyh12' },
     { id: 837988034, username: 'Sergeevich_dp' },
+    { id: 859844504, username: 'Its_Berkis' },
     { id: 867133829, username: 'Mavr342' },
     { id: 870460953, username: 'nikita_fb' },
     { id: 880358827, username: 'bodibilder777' },
@@ -97,6 +105,7 @@ const users = [
     { id: 953919548, username: 'shortnamik' },
     { id: 967245748, username: 'bohdan_jpeg' },
     { id: 991690714, username: 'Tema_2323' },
+    { id: 993029430, username: 'kanek_bratan' },
     { id: 1000912738, username: 'Zakovryazhind' },
     { id: 1009204685, username: 'Onnn17' },
     { id: 1013308225, username: 'Ruslan4ik_1' },
@@ -108,6 +117,8 @@ const users = [
     { id: 1113496134, username: 'Sh1frrr' },
     { id: 1128107821, username: 'Dmitry10041987' },
     { id: 1168727546, username: 'Невідомий' },
+    { id: 1176843862, username: 'hardobasser' },
+    { id: 1189261898, username: 'nezoox2000' },
     { id: 1284755906, username: 'Sergey0397' },
     { id: 1307379316, username: 'Невідомий' },
     { id: 1309419958, username: 'GrihaE' },
@@ -132,6 +143,7 @@ const users = [
     { id: 5583908503, username: 'christian_li_sonet' },
     { id: 5683859276, username: 'bmal993' },
     { id: 5709930626, username: 'Jeka_000_1' },
+    { id: 5729659403, username: 'Sergej6747' },
     { id: 5892265279, username: 'BrazilianRio' },
     { id: 5909009504, username: 'Aleks221bak' },
     { id: 6010586884, username: 'Uwaldemar' },
@@ -144,13 +156,29 @@ const users = [
     { id: 6808376800, username: 'Vypezdric' },
     { id: 7003472902, username: 'herroess' },
     { id: 7155183903, username: 'Daoplane' },
-    { id: 7224896147, username: 'Невідомий' }
+    { id: 7224896147, username: 'Невідомий' },
+    { id: 7298843520, username: 'varisloy' }
 ];
+
 
 
 function sendMessagesToUsers() {
     users.forEach((user) => {
-        tgcryptakotaBot.telegram.sendMessage(user.id, msg2h, { parse_mode: 'HTML' })
+        // Создание инлайн-клавиатуры
+        const keyboard = Markup.inlineKeyboard(
+            [
+                [Markup.button.callback('1️⃣Подать заявку в мою команду', 'btn_addToTeam')],
+                [Markup.button.callback('2️⃣Способ с переносом KYC', 'btn_transferKyc')],
+                [Markup.button.callback('Главное меню', 'btn_mainMenu')],
+                [Markup.button.callback('У меня не получается🥲', 'btn_haveProblem')],
+            ]
+        );
+
+        // Отправка сообщения с инлайн-кнопками
+        tgcryptakotaBot.telegram.sendMessage(user.id, notYourRef, {
+            parse_mode: 'HTML',
+            reply_markup: keyboard.reply_markup // Используйте keyboard.reply_markup
+        })
             .then(() => {
                 console.log(`Повідомлення успішно надіслано користувачу ${user.username}`);
             })
@@ -159,6 +187,7 @@ function sendMessagesToUsers() {
             });
     });
 }
+
 // Функція для скидання таймерів користувача
 function resetUserTimer(ctx) {
     const telegramId = ctx.from.id;
@@ -168,20 +197,23 @@ function resetUserTimer(ctx) {
         clearTimeout(userActivityTimers[telegramId].timer5min);
         clearTimeout(userActivityTimers[telegramId].timer50min);
         clearTimeout(userActivityTimers[telegramId].timer2h);
-        clearTimeout(userActivityTimers[telegramId].timer4h);
         clearTimeout(userActivityTimers[telegramId].timer24h);
     }
 
     // Створюємо новий таймер на 5 хвилин
     const timer5min = setTimeout(() => {
-        ctx.replyWithPhoto(
-            { source: path.join(__dirname, 'image', 'findUID.jpeg') },
-            {
-                caption: uidFind,
-                parse_mode: 'HTML'
-            }
+        ctx.replyWithHTML(
+            notYourRef,
+            Markup.inlineKeyboard(
+                [
+                    [Markup.button.callback('1️⃣Подать заявку в мою команду', 'btn_addToTeam')],
+                    [Markup.button.callback('2️⃣Способ с переносом KYC', 'btn_transferKyc')],
+                    [Markup.button.callback('Главное меню', 'btn_mainMenu')],
+                    [Markup.button.callback('У меня не получается🥲', 'btn_haveProblem')],
+                ]
+            )
         );
-    }, 300000); // 5 хвилин
+    }, 600000); // 10 хвилин
 
     // Створюємо новий таймер на 50 хвилин
     const timer50min = setTimeout(() => {
@@ -189,7 +221,12 @@ function resetUserTimer(ctx) {
             { source: path.join(__dirname, 'image', 'trade50min.jpg') },
             {
                 caption: msg50min,
-                parse_mode: 'HTML'
+                parse_mode: 'HTML',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '🔙Главное меню', callback_data: 'btn_mainMenu' }]
+                    ]
+                }
             }
         );
     }, 3000000); // 50 хвилин
@@ -200,7 +237,12 @@ function resetUserTimer(ctx) {
             { source: path.join(__dirname, 'image', 'strkShort.jpg') },
             {
                 caption: msg2h,
-                parse_mode: 'HTML'
+                parse_mode: 'HTML',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '🔙Главное меню', callback_data: 'btn_mainMenu' }]
+                    ]
+                }
             }
         );
     }, 7200000); // 2 години (2 * 60 * 60 * 1000 мс)
@@ -212,7 +254,12 @@ function resetUserTimer(ctx) {
             { source: path.join(__dirname, 'image', 'trade50min.jpg') },
             {
                 caption: msg50min,
-                parse_mode: 'HTML'
+                parse_mode: 'HTML',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '🔙Главное меню', callback_data: 'btn_mainMenu' }]
+                    ]
+                }
             }
         );
     }, 86400000); // 24 години (24 * 60 * 60 * 1000 мс)
@@ -262,28 +309,207 @@ tgcryptakotaBot.start((ctx) => {
     const username = ctx.from.username || 'Невідомий';
     saveUser(telegramId, username);
     ctx.replyWithHTML(
-        startTxt,
+        startTxtNew,
         Markup.inlineKeyboard(
             [
-                [Markup.button.callback('📈💰Сообщество PRIVATE KOTA', 'btn_privateKota')],
-                [Markup.button.callback('🧠👨‍💻Академия EDUCATION KOTA', 'btn_educationKota')],
+                [Markup.button.callback('➡️Получить доступ PRIVATE KOTA🧠', 'btn_getPrivateKota')],
+                [Markup.button.callback('Я уже зарегистрирован, но не Ваш реферал', 'btn_notYourRef')],
+                [Markup.button.callback('Стать рефералом', 'btn_becomeRef')],
+                [Markup.button.url('👨‍💻Связаться с поддержкой', 'https://t.me/managerkota')],
+                // [Markup.button.callback('Экслюзивный материал', 'btn_giftMaterial')],
             ]
         )
     )
 })
 
-tgcryptakotaBot.action('btn_educationKota', (ctx) => {
+tgcryptakotaBot.action('btn_mainMenu', (ctx) => {
     resetUserTimer(ctx);
     ctx.replyWithHTML(
-        educationKotaStartTxt,
-        Markup.inlineKeyboard([
-            // [Markup.button.url('🔗Зарегистрироваться', 'https://partner.bybit.com/b/kota')],
-            [Markup.button.url('👨‍💻Связаться с поддержкой', 'https://t.me/managerkota')],
-        ])
+        startTxtNew,
+        Markup.inlineKeyboard(
+            [
+                [Markup.button.callback('➡️Получить доступ PRIVATE KOTA🧠', 'btn_getPrivateKota')],
+                [Markup.button.callback('Я уже зарегистрирован, но не Ваш реферал', 'btn_notYourRef')],
+                [Markup.button.callback('Стать рефералом', 'btn_becomeRef')],
+                [Markup.button.url('👨‍💻Связаться с поддержкой', 'https://t.me/managerkota')],
+                // [Markup.button.callback('Экслюзивный материал', 'btn_giftMaterial')],
+            ]
+        )
     )
 });
 
-tgcryptakotaBot.action('btn_privateKota', (ctx) => {
+
+tgcryptakotaBot.action('btn_getPrivateKota', (ctx) => {
+    resetUserTimer(ctx);
+    ctx.replyWithHTML(
+        getPrivateKotaTxt,
+        Markup.inlineKeyboard(
+            [
+                [Markup.button.callback('Я не знаю, что такое UID', 'btn_uidDont')],
+                [Markup.button.callback('🔙Назад', 'btn_becomeRef')],
+                [Markup.button.callback('Главное меню', 'btn_mainMenu')],
+                [Markup.button.url('👨‍💻Связаться с поддержкой', 'https://t.me/managerkota')],
+            ]
+        )
+    );
+    setTimeout(() => {
+        ctx.reply("Ввести UID⬇⁣")
+    }, 1000);
+});
+tgcryptakotaBot.action('btn_notYourRef', (ctx) => {
+    resetUserTimer(ctx);
+    ctx.replyWithHTML(
+        notYourRef,
+        Markup.inlineKeyboard(
+            [
+                [Markup.button.callback('1️⃣Подать заявку в мою команду', 'btn_addToTeam')],
+                [Markup.button.callback('2️⃣Способ с переносом KYC', 'btn_transferKyc')],
+                [Markup.button.callback('Главное меню', 'btn_mainMenu')],
+                [Markup.button.callback('У меня не получается🥲', 'btn_haveProblem')],
+            ]
+        )
+    );
+});
+
+tgcryptakotaBot.action('btn_haveProblem', (ctx) => {
+    resetUserTimer(ctx);
+    ctx.reply( "Сообщить @managerkota о проблеме 💌",
+        Markup.inlineKeyboard(
+            [
+                [Markup.button.callback('🔙Назад', 'btn_notYourRef')],
+                [Markup.button.callback('Главное меню', 'btn_mainMenu')],
+            ]
+        )
+    );
+});
+
+tgcryptakotaBot.action('btn_addToTeam', (ctx) => {
+    resetUserTimer(ctx);
+    ctx.replyWithPhoto(
+        { source: path.join(__dirname, 'image', 'addToTeam.jpeg') },
+        {
+            caption: addToTeam,
+            parse_mode: 'HTML',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🔙Главное меню', callback_data: 'btn_mainMenu' }]
+                ]
+            }
+        }
+    );
+    setTimeout(() => {
+        ctx.reply("После заполнения формы, введите свой UID⬇⁣")
+    }, 1500);
+});
+
+tgcryptakotaBot.action('btn_transferKyc', (ctx) => {
+    resetUserTimer(ctx);
+    ctx.replyWithHTML(
+        transferKyc,
+        Markup.inlineKeyboard(
+            [
+                [Markup.button.callback('📹Видеоинструкция по переносу аккаунта', 'btn_videoIntruction')],
+                [Markup.button.callback('У меня не получается🥲', 'btn_haveProblem')],
+                [Markup.button.callback('Я все сделал✅', 'btn_getPrivateKota')],
+                [Markup.button.callback('Главное меню', 'btn_mainMenu')],
+            ]
+        )
+    );
+
+});
+
+tgcryptakotaBot.action('btn_videoIntruction', (ctx) => {
+    resetUserTimer(ctx);
+    ctx.reply(
+        "Выберите вариант видеинструкции:",
+        Markup.inlineKeyboard(
+            [
+                [Markup.button.callback('🖥Видеинструкция в WEB-версии', 'btn_videoWeb')],
+                [Markup.button.callback('📱Видеинструкция в мобильной-версии', 'btn_videoPhone')],
+            ]
+        )
+    );
+
+});
+
+tgcryptakotaBot.action('btn_videoWeb', (ctx) => {
+    resetUserTimer(ctx);
+
+    ctx.sendVideo({ source: path.join(__dirname, 'image', 'webVersion.mp4') }, {
+        caption: '🖥Это видеоинструкция для WEB-версии.',
+    });
+
+    ctx.reply(
+        "Видеоинструкция по переносу аккаунта в WEB-версии.\n" +
+        "Загрузка видео может занять пару минут.\n" +
+        "Ждем-с🤔",
+        Markup.inlineKeyboard(
+            [
+                [Markup.button.callback('🔙Назад', 'btn_notYourRef')],
+            ]
+        )
+    );
+
+});
+
+tgcryptakotaBot.action('btn_videoPhone', (ctx) => {
+    resetUserTimer(ctx);
+
+    ctx.sendVideo({ source: path.join(__dirname, 'image', 'telVersio.mp4') }, {
+        caption: '📱Это видеоинструкция для мобильной-версии',
+    });
+
+    ctx.reply(
+        "Видеоинструкция по переносу аккаунта в мобильной-версии.\n" +
+        "Загрузка видео может занять пару минут.\n" +
+        "Ждем-с🤔",
+        Markup.inlineKeyboard(
+            [
+                [Markup.button.callback('🔙Назад', 'btn_notYourRef')],
+            ]
+        )
+    );
+
+});
+
+tgcryptakotaBot.action('btn_uidDont', (ctx) => {
+    resetUserTimer(ctx);
+    ctx.replyWithPhoto(
+        { source: path.join(__dirname, 'image', 'findUID.jpeg') },
+        {
+            caption: uidFind,
+            parse_mode: 'HTML',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🔙Главное меню', callback_data: 'btn_mainMenu' }]
+                ]
+            }
+        }
+    );
+    setTimeout(() => {
+        ctx.reply("Ввести UID⬇⁣")
+    }, 1500);
+});
+
+
+tgcryptakotaBot.action('btn_becomeRef', (ctx) => {
+    resetUserTimer(ctx);
+    ctx.replyWithHTML(
+        backTxt,
+        Markup.inlineKeyboard(
+            [
+                [Markup.button.url('🔗Зарегистрироваться', 'https://partner.bybit.com/b/kota')],
+                [Markup.button.url('Я не знаю, как добавить код партнера', 'https://www.bybit.com/ru-RU/help-center/article/How-to-Add-and-Check-Registered-Affiliate-Code#C')],
+                [Markup.button.url('Я не знаю, как верифицировать аккаунт', 'https://www.bybit.com/ru-RU/help-center/article/How-to-Complete-Individual-KYC-Verification')],
+                [Markup.button.callback('➡️Получить доступ PRIVATE KOTA🧠', 'btn_getPrivateKota')],
+                [Markup.button.url('👨‍💻Связаться с поддержкой', 'https://t.me/managerkota')],
+                [Markup.button.callback('🔙Назад, в главное меню', 'btn_mainMenu')],
+            ]
+        )
+    );
+});
+
+tgcryptakotaBot.action('btn_privateKota2', (ctx) => {
     resetUserTimer(ctx);
     ctx.replyWithHTML(
         privateKotaStartTxt,
@@ -314,16 +540,13 @@ tgcryptakotaBot.on('text', async (ctx) => {
         const userData = await fetchUserData(message)
         const {result} = userData
         if (Object.keys(result).length === 0) {
-            ctx.replyWithHTML(uidRefuse);
-            setTimeout(() => {
-                ctx.replyWithPhoto(
-                    { source: path.join(__dirname, 'image', 'changeVerif.jpeg') },
-                    {
-                        caption: uidChange,
-                        parse_mode: 'HTML'
-                    }
-                );
-            }, 1000); // Затримка 1 секунда
+            ctx.replyWithHTML(
+                uidRefuse,
+                Markup.inlineKeyboard([
+                    [Markup.button.callback('Я уже зарегистрирован, но не Ваш реферал', 'btn_notYourRef')],
+                    [Markup.button.url('👨‍💻Связаться с поддержкой', 'https://t.me/managerkota')],
+                ])
+            );
         } else {
             console.log(userData)
             if (result.KycLevel >= 1 && Number(result.depositAmount30Day) >= 100) {
@@ -352,7 +575,12 @@ tgcryptakotaBot.on('text', async (ctx) => {
                 { source: path.join(__dirname, 'image', 'findUID.jpeg') },
                 {
                     caption: uidFind,
-                    parse_mode: 'HTML'
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: '🔙Главное меню', callback_data: 'btn_mainMenu' }]
+                        ]
+                    }
                 }
             );
         }, 1000); // Затримка 1 секунда
