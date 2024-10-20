@@ -587,7 +587,7 @@ tgcryptakotaBot.on('text', async (ctx) => {
     }
 });
 
-sendMessagesToUsers();
+// sendMessagesToUsers();
 
 tgcryptakotaBot.launch();
 
