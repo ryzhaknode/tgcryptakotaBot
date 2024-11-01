@@ -194,26 +194,26 @@ function resetUserTimer(ctx) {
 
     // Якщо попередні таймери існують, очищаємо їх
     if (userActivityTimers[telegramId]) {
-        clearTimeout(userActivityTimers[telegramId].timer5min);
+        // clearTimeout(userActivityTimers[telegramId].timer5min);
         clearTimeout(userActivityTimers[telegramId].timer50min);
         clearTimeout(userActivityTimers[telegramId].timer2h);
         clearTimeout(userActivityTimers[telegramId].timer24h);
     }
 
     // Створюємо новий таймер на 5 хвилин
-    const timer5min = setTimeout(() => {
-        ctx.replyWithHTML(
-            notYourRef,
-            Markup.inlineKeyboard(
-                [
-                    [Markup.button.callback('1️⃣Подать заявку в мою команду', 'btn_addToTeam')],
-                    [Markup.button.callback('2️⃣Способ с переносом KYC', 'btn_transferKyc')],
-                    [Markup.button.callback('Главное меню', 'btn_mainMenu')],
-                    [Markup.button.callback('У меня не получается🥲', 'btn_haveProblem')],
-                ]
-            )
-        );
-    }, 600000); // 10 хвилин
+    // const timer5min = setTimeout(() => {
+    //     ctx.replyWithHTML(
+    //         notYourRef,
+    //         Markup.inlineKeyboard(
+    //             [
+    //                 [Markup.button.callback('1️⃣Подать заявку в мою команду', 'btn_addToTeam')],
+    //                 [Markup.button.callback('2️⃣Способ с переносом KYC', 'btn_transferKyc')],
+    //                 [Markup.button.callback('Главное меню', 'btn_mainMenu')],
+    //                 [Markup.button.callback('У меня не получается🥲', 'btn_haveProblem')],
+    //             ]
+    //         )
+    //     );
+    // }, 600000); // 10 хвилин
 
     // Створюємо новий таймер на 50 хвилин
     const timer50min = setTimeout(() => {
@@ -265,7 +265,7 @@ function resetUserTimer(ctx) {
     }, 86400000); // 24 години (24 * 60 * 60 * 1000 мс)
 
     // Зберігаємо всі таймери для користувача
-    userActivityTimers[telegramId] = { timer5min, timer50min, timer2h, timer24h };
+    userActivityTimers[telegramId] = { timer50min, timer2h, timer24h };
 }
 
 
@@ -299,7 +299,7 @@ function saveUser(telegramId, username) {
 }
 
 
-const tgcryptakotaBot = new Telegraf(mainBotToken);
+const tgcryptakotaBot = new Telegraf(testBotToken);
 tgcryptakotaBot.telegram.setMyCommands([
     { command: 'start', description: 'Начать сначала' },
 ]);
@@ -313,7 +313,7 @@ tgcryptakotaBot.start((ctx) => {
         Markup.inlineKeyboard(
             [
                 [Markup.button.callback('➡️Получить доступ PRIVATE KOTA🧠', 'btn_getPrivateKota')],
-                [Markup.button.callback('Я уже зарегистрирован, но не Ваш реферал', 'btn_notYourRef')],
+                [Markup.button.callback('Я уже зарегистрирован, но не Ваш реферал', 'btn_transferKyc')],
                 [Markup.button.callback('Стать рефералом', 'btn_becomeRef')],
                 [Markup.button.url('👨‍💻Связаться с поддержкой', 'https://t.me/managerkota')],
                 // [Markup.button.callback('Экслюзивный материал', 'btn_giftMaterial')],
@@ -363,7 +363,7 @@ tgcryptakotaBot.action('btn_notYourRef', (ctx) => {
         Markup.inlineKeyboard(
             [
                 [Markup.button.callback('1️⃣Подать заявку в мою команду', 'btn_addToTeam')],
-                [Markup.button.callback('2️⃣Способ с переносом KYC', 'btn_transferKyc')],
+                [Markup.button.callback('️Способ с переносом KYC', 'btn_transferKyc')],
                 [Markup.button.callback('Главное меню', 'btn_mainMenu')],
                 [Markup.button.callback('У меня не получается🥲', 'btn_haveProblem')],
             ]
@@ -376,7 +376,7 @@ tgcryptakotaBot.action('btn_haveProblem', (ctx) => {
     ctx.reply( "Сообщить @managerkota о проблеме 💌",
         Markup.inlineKeyboard(
             [
-                [Markup.button.callback('🔙Назад', 'btn_notYourRef')],
+                [Markup.button.callback('🔙Назад', 'btn_transferKyc')],
                 [Markup.button.callback('Главное меню', 'btn_mainMenu')],
             ]
         )
@@ -445,7 +445,7 @@ tgcryptakotaBot.action('btn_videoWeb', (ctx) => {
         "Ждем-с🤔",
         Markup.inlineKeyboard(
             [
-                [Markup.button.callback('🔙Назад', 'btn_notYourRef')],
+                [Markup.button.callback('🔙Назад', 'btn_transferKyc')],
             ]
         )
     );
@@ -465,7 +465,7 @@ tgcryptakotaBot.action('btn_videoPhone', (ctx) => {
         "Ждем-с🤔",
         Markup.inlineKeyboard(
             [
-                [Markup.button.callback('🔙Назад', 'btn_notYourRef')],
+                [Markup.button.callback('🔙Назад', 'btn_transferKyc')],
             ]
         )
     );
@@ -543,7 +543,7 @@ tgcryptakotaBot.on('text', async (ctx) => {
             ctx.replyWithHTML(
                 uidRefuse,
                 Markup.inlineKeyboard([
-                    [Markup.button.callback('Я уже зарегистрирован, но не Ваш реферал', 'btn_notYourRef')],
+                    [Markup.button.callback('Я уже зарегистрирован, но не Ваш реферал', 'btn_transferKyc')],
                     [Markup.button.url('👨‍💻Связаться с поддержкой', 'https://t.me/managerkota')],
                 ])
             );
