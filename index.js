@@ -412,15 +412,17 @@ const users = [
 
 
 
-function sendMessagesToUsers() {
-    users.forEach((user) => {
-        // Определяем путь к изображению
-        const photoPath = path.join(__dirname, 'image', 'scalpingPrivate.jpg');
+// Задержка (в миллисекундах)
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-        // Отправка сообщения с фото и инлайн-кнопками
-        tgcryptakotaBot.telegram.sendPhoto(
+// Асинхронная функция для отправки сообщения с фото
+async function sendMessageToUser(user) {
+    const photoPath = path.join(__dirname, 'image', 'scalpingPrivate.jpg');
+
+    try {
+        await tgcryptakotaBot.telegram.sendPhoto(
             user.id,
-            { source: photoPath }, // Путь к изображению
+            { source: photoPath },
             {
                 caption: scalpingPrivate,
                 parse_mode: 'HTML',
@@ -433,16 +435,25 @@ function sendMessagesToUsers() {
                     ]
                 }
             }
-        )
-            .then(() => {
-                console.log(`Сообщение с фото успешно отправлено пользователю ${user.username}`);
-            })
-            .catch((error) => {
-                console.error(`Не удалось отправить сообщение с фото пользователю ${user.username}:`, error);
-            });
-    });
+        );
+        console.log(`Сообщение с фото успешно отправлено пользователю ${user.username}`);
+    } catch (error) {
+        console.error(`Не удалось отправить сообщение с фото пользователю ${user.username}:`, error);
+    }
 }
 
+// Основная функция для отправки сообщений всем пользователям
+async function sendMessagesToUsers() {
+    for (let i = 0; i < users.length; i++) {
+        const user = users[i];
+
+        // Отправка сообщения пользователю
+        await sendMessageToUser(user);
+
+        // Задержка между отправками (например, 500 миллисекунд)
+        await delay(500);
+    }
+}
 // Функція для скидання таймерів користувача
 function resetUserTimer(ctx) {
     const telegramId = ctx.from.id;
@@ -849,7 +860,7 @@ tgcryptakotaBot.on('text', async (ctx) => {
     }
 });
 
-sendMessagesToUsers();
+// sendMessagesToUsers();
 
 tgcryptakotaBot.launch();
 
